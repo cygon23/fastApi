@@ -3,6 +3,12 @@ from fastapi import FastAPI, Response, status, HTTPException
 from  fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import time
+from dotenv import load_dotenv
+import os
+
 
 app = FastAPI()
 
@@ -12,9 +18,35 @@ class Post(BaseModel):
     published:bool = True
     rating: Optional[int] = None
 
+    load_dotenv()
 
 
-#storing  data in a memeory before db
+# Get variables
+host = os.getenv("DB_HOST")
+database = os.getenv("DB_NAME")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASS")
+
+
+while True:
+##connect to the db
+   try:
+       conn = psycopg2.connect(
+    host=host,
+    database=database,
+    user=user,
+    password=password,
+    cursor_factory=RealDictCursor
+)
+       cursor = conn.cursor()
+       print("Database connection was succefully")
+       break
+   except Exception as error:
+       print("connecting to databse failed")
+       print("Error", error)
+       time.sleep(2)
+
+
 my_posts = [{
     "title":"title of the post","content": "content of post 1", "id":1},
      {"title":"title of the post","content": "content of post 2", "id":2}
@@ -36,6 +68,8 @@ async def root():
 
 @app.get("/posts")
 def get_posts():
+    cursor.execute(""" SELECT * FROM posts """)
+    posts =cursor.fetchall()
     return {"data": my_posts}
 
 
